@@ -140,3 +140,88 @@ def test(net, testloader, device):
     accuracy = correct / len(testloader.dataset)
     loss = loss / len(testloader)
     return loss, accuracy
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def plot_client_distribution(num_partitions=4):
+    """Plot the class distribution of each federated client."""
+
+    global fds
+
+    if fds is None:
+        partitioner = DirichletPartitioner(
+            num_partitions=num_partitions,
+            partition_by="label",
+            alpha=0.5,
+            min_partition_size=10,
+            self_balancing=True,
+            seed=42,
+        )
+
+        fds = FederatedDataset(
+            dataset="uoft-cs/cifar10",
+            partitioners={"train": partitioner},
+        )
+
+    class_names = [
+        "avião",
+        "automóvel",
+        "pássaro",
+        "gato",
+        "cervo",
+        "cachorro",
+        "sapo",
+        "cavalo",
+        "navio",
+        "caminhão",
+    ]
+
+    distributions = []
+
+    for partition_id in range(num_partitions):
+        partition = fds.load_partition(partition_id)
+
+        labels = partition["label"]
+
+        counts = np.bincount(
+            labels,
+            minlength=10
+        )
+
+        distributions.append(counts)
+
+    distributions = np.array(distributions)
+
+    # Converter para proporção
+    distributions = distributions / distributions.sum(axis=1, keepdims=True)
+
+    # Gráfico
+    x = np.arange(num_partitions)
+    bottom = np.zeros(num_partitions)
+
+    plt.figure(figsize=(12, 6))
+
+    for class_id in range(10):
+        plt.bar(
+            x,
+            distributions[:, class_id],
+            bottom=bottom,
+            label=class_names[class_id],
+        )
+
+        bottom += distributions[:, class_id]
+
+    plt.xlabel("Cliente")
+    plt.ylabel("Proporção das amostras")
+    plt.title("Distribuição não-IID do CIFAR-10 entre os clientes")
+    plt.xticks(x, [f"Cliente {i}" for i in range(num_partitions)])
+    plt.legend(
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left"
+    )
+
+    plt.tight_layout()
+    plt.show()

@@ -5,7 +5,7 @@ from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
 from flwr.serverapp.strategy import FedAvg
 
-from pytorchexample.task import Net, load_centralized_dataset, test
+from pytorchexample.task import Net, load_centralized_dataset, plot_client_distribution, test
 
 # Create ServerApp
 app = ServerApp()
@@ -26,6 +26,8 @@ def main(grid: Grid, context: Context) -> None:
 
     # Initialize FedAvg strategy
     strategy = FedAvg(fraction_evaluate=fraction_evaluate, fraction_train=0.5)
+
+    plot_client_distribution()
 
     # Start strategy, run FedAvg for `num_rounds`
     result = strategy.start(
